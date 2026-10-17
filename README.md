@@ -74,7 +74,7 @@ Unix新文件请求权限600、新建目录700；Windows依赖个人目录ACL。
 ## 数据与许可
 
 - 天气来自 [Open-Meteo](https://open-meteo.com/en/docs)，数据采用 [CC BY 4.0](https://open-meteo.com/en/licence)。终端、卡片和JSON保留署名。免费托管API受其[服务条款](https://open-meteo.com/en/terms)限制，代码MIT许可不改变服务条款。
-- 地点/路线来自[高德 Web服务](https://lbs.amap.com/api/webservice/summary)，遵守配额与条款。请求有超时及有限重试，景点发现为限制调用量不重试。
+- 地点/路线来自[高德 Web服务](https://lbs.amap.com/api/webservice/summary)，遵守配额与条款。同一进程的高德请求至少间隔1.05秒，短时QPS限流有有限重试；景点发现保持每中心一次请求。多个进程/应用共享密钥时仍可能限流，避免同时批量查询。错误码参见[官方说明](https://lbs.amap.com/api/webservice/guide/tools/info)。
 - 风险灯是低温、降水、降雪等规则提示，不是通行、安全或概率结论。⚪为数据不足。到达时刻按各段折线距离比例插值，没有各小段实时速度；天气预报不是道路实况。
 - 本项目采用MIT许可，第三方算法与出处见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 

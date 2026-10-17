@@ -20,6 +20,7 @@ from sights import match_builtin_sight, load_builtin_sights
 BASE = str(Path(__file__).resolve().parent)
 TZ = "Asia/Shanghai"
 VERSION = "0.2.0"
+_AMAP_LAST_REQUEST = None
 WMO = {0: ("晴", "☀️"), 1: ("大部晴", "🌤️"), 2: ("多云", "⛅"), 3: ("阴", "☁️"),
        45: ("雾", "🌫️"), 48: ("雾凇", "🌫️"), 51: ("毛毛雨", "🌦️"), 53: ("毛毛雨", "🌦️"), 55: ("毛毛雨", "🌦️"),
        61: ("小雨", "🌧️"), 63: ("中雨", "🌧️"), 65: ("大雨", "🌧️"), 71: ("小雪", "🌨️"), 73: ("中雪", "❄️"),
@@ -66,15 +67,29 @@ def get_amap_key():
 
 
 def http_json(url, retry=3):
+    global _AMAP_LAST_REQUEST
+    endpoint = urllib.parse.urlsplit(url)
+    is_amap = endpoint.hostname == "restapi.amap.com"
     for attempt in range(retry):
         try:
+            if is_amap:
+                if _AMAP_LAST_REQUEST is not None:
+                    remaining = 1.05 - (time.monotonic() - _AMAP_LAST_REQUEST)
+                    if remaining > 0:
+                        time.sleep(remaining)
+                _AMAP_LAST_REQUEST = time.monotonic()
             req = urllib.request.Request(url, headers={"User-Agent": "travel-cli/" + VERSION})
             with urllib.request.urlopen(req, timeout=20) as response:
-                return json.loads(response.read().decode("utf-8-sig"))
+                payload = json.loads(response.read().decode("utf-8-sig"))
+            if is_amap and isinstance(payload, dict) and str(payload.get("infocode")) in ("10004", "10014", "10015", "10019", "10020", "10021", "10029"):
+                if attempt + 1 < retry and str(payload.get("infocode")) != "10004":
+                    time.sleep(1.2 * (attempt + 1))
+                    continue
+                raise ToolError("UPSTREAM_RATE_LIMIT", "高德接口请求频率受限，请稍后重试或减少同时运行的查询")
+            return payload
         except Exception:
             if attempt + 1 < retry:
                 time.sleep(0.8 * (attempt + 1))
-    endpoint = urllib.parse.urlsplit(url)
     raise ToolError("UPSTREAM_REQUEST", f"请求失败: {endpoint.hostname}{endpoint.path}，请稍后重试")
 
 

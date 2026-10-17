@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import test_planning
@@ -103,6 +104,28 @@ class JourneyTests(unittest.TestCase):
         self.assertNotEqual(status, 0)
         self.assertFalse(json.loads(stdout)["ok"])
         self.assertEqual(stderr, "")
+
+    def test_amap_requests_are_paced_and_qps_response_retried(self):
+        limited = {"status": "0", "infocode": "10021"}
+        good = {"status": "1", "infocode": "10000"}
+        responses = []
+        for value in (limited, good):
+            response = MagicMock()
+            response.__enter__.return_value.read.return_value = json.dumps(value).encode()
+            responses.append(response)
+        with patch.object(travel.urllib.request, "urlopen", side_effect=responses) as request, patch.object(travel.time, "monotonic", return_value=100), patch.object(travel.time, "sleep") as sleep, patch.object(travel, "_AMAP_LAST_REQUEST", 100, create=True):
+            result = travel.http_json("https://restapi.amap.com/v3/direction/driving?key=synthetic")
+        self.assertEqual(result, good)
+        self.assertEqual(request.call_count, 2)
+        self.assertTrue(sleep.called)
+
+    def test_single_attempt_scenic_request_does_not_retry_qps_error(self):
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = b'{"status":"0","infocode":"10021"}'
+        with patch.object(travel.urllib.request, "urlopen", return_value=response) as request, patch.object(travel.time, "sleep"), self.assertRaises(travel.ToolError) as error:
+            travel.http_json("https://restapi.amap.com/v3/place/around?key=synthetic", retry=1)
+        self.assertEqual(error.exception.error_code, "UPSTREAM_RATE_LIMIT")
+        self.assertEqual(request.call_count, 1)
 
     def test_saved_watch_reuses_coordinates_and_deduplicates(self):
         path = Path(self.tmp.name) / "trip.watch.json"
