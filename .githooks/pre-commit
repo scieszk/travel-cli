@@ -1,0 +1,3 @@
+#!/bin/sh
+set -eu
+python scripts/check_private.py --staged

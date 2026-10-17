@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+python scripts/check_private.py --history
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --redact --no-banner .
+fi

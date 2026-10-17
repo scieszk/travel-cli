@@ -1,0 +1,5 @@
+{
+  "北京": {"lng": 116.4074, "lat": 39.9042, "elev": null, "alias": ["Beijing"]},
+  "上海": {"lng": 121.4737, "lat": 31.2304, "elev": null, "alias": ["Shanghai"]},
+  "成都": {"lng": 104.0665, "lat": 30.5723, "elev": null, "alias": ["Chengdu"]}
+}
