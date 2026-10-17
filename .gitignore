@@ -39,3 +39,8 @@ output/
 outputs/
 .DS_Store
 Thumbs.db
+
+.private/
+preferences.json
+*.watch.json
+*.itinerary.json

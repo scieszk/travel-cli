@@ -1,0 +1,46 @@
+[
+  {
+    "name": "故宫博物院",
+    "city": "北京市",
+    "address": "北京市东城区景山前街4号故宫博物院",
+    "aliases": ["故宫", "北京故宫", "Palace Museum"],
+    "source_url": "https://intl.dpm.org.cn/detail/304.html",
+    "verified_at": "2026-10-18",
+    "category": "culture",
+    "visit_minutes": 180,
+    "visit_minutes_note": "人工估算为3小时，不含排队、停车和交通；不是馆方承诺，请按兴趣和实际开放情况调整。"
+  },
+  {
+    "name": "上海博物馆人民广场馆",
+    "city": "上海市",
+    "address": "上海市黄浦区人民大道201号",
+    "aliases": ["上博人民广场馆", "上海博物馆人民广场", "Shanghai Museum People's Square"],
+    "source_url": "https://www.shanghaimuseum.cn/mu/frontend/pg/index",
+    "verified_at": "2026-10-18",
+    "category": "culture",
+    "visit_minutes": 120,
+    "visit_minutes_note": "人工估算为2小时，不含排队、停车和交通；不是馆方承诺，请按所选展览和实际开放情况调整。"
+  },
+  {
+    "name": "成都大熊猫繁育研究基地",
+    "city": "成都市",
+    "address": "四川省成都市成华区熊猫大道1375号",
+    "aliases": ["成都熊猫基地", "熊猫基地", "Chengdu Panda Base"],
+    "source_url": "https://m.panda.org.cn/cn/support/support/",
+    "verified_at": "2026-10-18",
+    "category": "nature",
+    "visit_minutes": 180,
+    "visit_minutes_note": "人工估算为3小时，不含排队、停车和交通；不是景区承诺，请按游览区域和实际开放情况调整。"
+  },
+  {
+    "name": "陕西历史博物馆本馆",
+    "city": "西安市",
+    "address": "陕西省西安市雁塔区小寨东路91号",
+    "aliases": ["陕西历史博物馆", "陕历博", "Shaanxi History Museum"],
+    "source_url": "https://www.sxhm.com/index.html",
+    "verified_at": "2026-10-18",
+    "category": "culture",
+    "visit_minutes": 120,
+    "visit_minutes_note": "人工估算为2小时，不含排队、停车和交通；不是馆方承诺，请按所选展览和实际开放情况调整。"
+  }
+]

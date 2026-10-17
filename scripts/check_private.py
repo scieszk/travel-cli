@@ -16,7 +16,7 @@ RULES = {
     "private-network": re.compile(r"\b(?:192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})\b"),
     "embedded-url-credential": re.compile(r"https?://[^\s/:]+:[^\s/@]+@"),
 }
-PRIVATE_PARTS = {".secrets", ".git-credentials", "node_modules", ".venv", "__pycache__", "attachments", "logs", "outputs", "dist"}
+PRIVATE_PARTS = {".private", ".secrets", ".git-credentials", "node_modules", ".venv", "__pycache__", "attachments", "logs", "outputs", "dist"}
 PRIVATE_SUFFIXES = {".key", ".pem", ".db", ".sqlite", ".sqlite3", ".jsonl", ".log", ".zip", ".tgz", ".pptx", ".pdf", ".docx", ".xlsx", ".png", ".jpg", ".jpeg"}
 
 
@@ -53,7 +53,7 @@ def main():
     for filename, raw in sources(history=args.history, staged=args.staged):
         count += 1
         path = PurePosixPath(filename)
-        if set(path.parts) & PRIVATE_PARTS or path.suffix.lower() in PRIVATE_SUFFIXES or path.name == "waypoints.json" or (path.name.startswith(".env") and path.name != ".env.example"):
+        if set(path.parts) & PRIVATE_PARTS or path.suffix.lower() in PRIVATE_SUFFIXES or path.name in {"waypoints.json", "preferences.json"} or path.name.endswith((".watch.json", ".itinerary.json")) or (path.name.startswith(".env") and path.name != ".env.example"):
             findings.append((filename, 0, "private-file"))
             continue
         if b"\0" in raw:

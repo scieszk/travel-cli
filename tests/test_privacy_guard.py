@@ -61,6 +61,19 @@ class PrivacyGuardTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertIn("private-file", result.stderr)
 
+    def test_private_preferences_and_watches_are_blocked(self):
+        for name in ("preferences.json", "trip.watch.json", "trip.state.watch.json", "trip.itinerary.json", ".private/note.txt"):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                subprocess.run(["git", "init", "-q", folder], check=True)
+                target = root / name
+                target.parent.mkdir(exist_ok=True)
+                target.write_text('{}\n')
+                subprocess.run(["git", "add", name], cwd=root, check=True)
+                result = subprocess.run([sys.executable, str(GUARD), "--staged"], cwd=root, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("private-file", result.stderr)
+
     def test_clean_source_is_accepted(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

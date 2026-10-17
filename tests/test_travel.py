@@ -98,7 +98,7 @@ class TravelTests(unittest.TestCase):
     def test_route_rejects_forecast_outside_arrival_window(self):
         args = argparse.Namespace(origin="A", dest="B", via=None, speed=60, depart="08:00", step=40)
         forecast = {"hourly": {"time": ["2000-01-01T00:00"], "weather_code": [0], "temperature_2m": [10], "precipitation_probability": [0]}}
-        with patch.object(travel, "load_points", return_value={}), patch.object(travel, "resolve", return_value=("Sample", 120, 30, None)), patch.object(travel, "amap_route", return_value=([(120, 30)], 60, 1)), patch.object(travel, "om_forecast", return_value=forecast), contextlib.redirect_stdout(io.StringIO()):
+        with patch.object(travel, "load_points", return_value={}), patch.object(travel, "resolve", return_value=("Sample", 120, 30, None)), patch.object(travel, "amap_route", return_value=([(120, 30), (120.5, 30)], 60, 1)), patch.object(travel, "om_forecast", return_value=forecast), contextlib.redirect_stdout(io.StringIO()):
             with self.assertRaisesRegex(SystemExit, "范围"):
                 travel.cmd_route(args)
 
