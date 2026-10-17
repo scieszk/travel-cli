@@ -18,6 +18,7 @@ def add_plan_options(parser):
     night.add_argument("--avoid-night-driving", dest="avoid_night_driving", action="store_true", default=None)
     night.add_argument("--allow-night-driving", dest="avoid_night_driving", action="store_false")
     parser.add_argument("--card", action="store_true", help="输出可复制的 Markdown 行程卡片")
+    parser.add_argument("--image", metavar="FILE.png", help="生成所选方案图片；失败时保留原文字/结构化结果")
     parser.add_argument("--select", type=int, default=1, help="卡片/保存检查所选方案序号，从1开始")
     parser.add_argument("--save-watch", metavar="FILE", help="保存私有行程基准，自动使用 .watch.json 后缀")
 
@@ -46,6 +47,8 @@ def validate(args):
     if args.cmd in ("route", "compare", "outing"):
         if args.card and args.structured:
             raise ToolError("INVALID_ARGUMENT", "--card 和 --structured 请选择一种输出格式", 2)
+        if args.card and getattr(args, "image", None):
+            raise ToolError("INVALID_ARGUMENT", "--card 和 --image 请选择一种卡片格式", 2)
         if args.select < 1:
             raise ToolError("INVALID_ARGUMENT", "--select 必须从1开始", 2)
         prefs = store.load_preferences()
@@ -112,8 +115,8 @@ def route_sights(api, args, schedule):
 
 def finish(api, command, data, args):
     plans = data.get("plans", [data])
-    if getattr(args, "card", False) or getattr(args, "save_watch", None):
-        if args.select > len(plans):
+    if getattr(args, "card", False) or getattr(args, "save_watch", None) or getattr(args, "image", None):
+        if args.select < 1 or args.select > len(plans):
             raise ToolError("NO_PLAN", "没有对应序号的可用方案，无法生成卡片或保存检查", 2)
         selected = plans[args.select - 1]
         if args.save_watch:
@@ -122,6 +125,9 @@ def finish(api, command, data, args):
         if args.card:
             print(store.render_card(selected))
             return data
+        if getattr(args, "image", None):
+            from image_support import attach_image
+            attach_image(data, "route", selected, args.image)
     return api.present(command, data, args)
 
 

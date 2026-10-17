@@ -1,0 +1,2 @@
+# Optional: plain-text and JSON queries do not need Pillow.
+Pillow>=9.3

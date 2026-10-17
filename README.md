@@ -1,6 +1,6 @@
 # travel-cli
 
-面向终端和个人 Bot 的旅行规划工具：比较出发时间的沿途天气、评估景点实际绕行、安排有时间预算的往返小旅行，并生成行程卡片与私有变化检查。Python 3.10+，只用标准库。
+面向终端和个人 Bot 的旅行规划工具：比较出发时间的沿途天气、评估景点实际绕行、安排有时间预算的往返小旅行，并生成行程卡片与私有变化检查。Python 3.10+，文字和 JSON 查询只用标准库；PNG 卡片可选安装 Pillow。
 
 ## 运行
 
@@ -58,6 +58,35 @@ python travel.py watch check .private/weekend.watch.json --structured
 路线形状或采样身份变化时无法逐点比较，报告不可用；基准本身不完整时需重新确认并保存。不要并发检查同一文件，本地去重文件不是多进程调度器。Bot可在具体行程确定后调用检查并依据 `state/notify` 提醒。
 
 Unix新文件请求权限600、新建目录700；Windows依赖个人目录ACL。私有偏好、检查文件、密钥、个人点位均被Git忽略，提交检查也拒绝强制暂存这些文件。
+
+## 天气与行程图片
+
+```sh
+python -m pip install -r requirements-images.txt
+# Debian/Ubuntu 的中文字体：sudo apt-get install fonts-noto-cjk
+python travel.py weather 成都 --days 1 --image .private/weather.png --structured
+python travel.py compare 成都 乐山 --departures 07:00 10:00 --select 2 --image .private/trip.png --structured
+python travel.py outing 成都 --hours 6 --image .private/outing.png --structured
+```
+
+PNG 为适合手机查看的竖版卡片。天气包含当前预报及其数据时间、当日温度范围和从当前小时起的6小时降水预报；字段缺失就显示未知。当前天气来自模型预报，不等同于气象站实测。`--details` 单独使用可查询这些额外字段而不生成图片。行程卡片保留日期、预计时间、天气和查询时间；过长内容会明确说明省略，完整内容以原始 JSON 为准。
+
+字体自动寻找 Noto CJK、Windows 微软雅黑等本机中文字体；可用 `TRAVEL_CARD_FONT` 指定字体文件。字体未捆绑进项目。图片和私有输出目录被 Git 忽略，分享前检查位置与个人行程。
+
+`--image` 可与 `--structured` 同用，成功时读取 `data.image.path`；生成失败时仍返回原有天气或行程，并提供 `data.image_error`。此时 `ok:true` 只表示查询成功，不代表图片存在。`--card` 仍是 Markdown，不能与 `--image` 同用。
+
+也可以把已取得的 JSON 交给离线渲染器，避免重复请求接口：
+
+```sh
+python card_image.py --kind weather --input .private/weather.json --output .private/weather.png
+python card_image.py --kind route --input .private/plans.json --select 2 --output .private/trip.png
+# 铁路结构化输出来自 https://github.com/scieszk/cr12306-cli
+node ../cr12306-cli/dist/cli.js roundtrip 北京南 天津 --structured | python card_image.py --kind rail --input - --output .private/rail.png
+```
+
+独立渲染器只读取数据，不查询网络；失败返回非零退出码及单个 `ok:false` JSON。输入最多4 MiB，使用 UTF-8；可加 `--font FILE` 指定中文字体。它保留输入的查询时间，不会把旧查询标为实时数据。余票仍以12306下单时为准。
+
+Bot 的定时天气提醒应先检查查询结果，再通过其原有附件接口发送真实文件。推荐先发送简短天气与原有待办正文，再附图片；图片生成或上传失败时文字仍在。不要把本地路径当成图片已发送，也不要同时使用调度器自动投递和手动发送造成重复。工具本身不创建任务或发送消息。
 
 ## 密钥和坐标
 

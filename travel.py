@@ -19,7 +19,7 @@ from sights import match_builtin_sight, load_builtin_sights
 
 BASE = str(Path(__file__).resolve().parent)
 TZ = "Asia/Shanghai"
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 _AMAP_LAST_REQUEST = None
 WMO = {0: ("晴", "☀️"), 1: ("大部晴", "🌤️"), 2: ("多云", "⛅"), 3: ("阴", "☁️"),
        45: ("雾", "🌫️"), 48: ("雾凇", "🌫️"), 51: ("毛毛雨", "🌦️"), 53: ("毛毛雨", "🌦️"), 55: ("毛毛雨", "🌦️"),
@@ -125,17 +125,19 @@ def nearest_point(lng, lat, points, max_km=15):
     return None, None
 
 
-def om_forecast(lat, lng, elev=None, days=6, hourly=False):
+def om_forecast(lat, lng, elev=None, days=6, hourly=False, current=False, require_hourly=True):
     lng, lat = gcj02_to_wgs84(lng, lat)
     params = {"latitude": lat, "longitude": lng, "timezone": TZ,
               "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,snowfall_sum,sunrise,sunset",
               "forecast_days": days}
     if hourly:
         params["hourly"] = "temperature_2m,precipitation_probability,precipitation,weather_code,snowfall"
+    if current:
+        params["current"] = "temperature_2m,apparent_temperature,weather_code,is_day,relative_humidity_2m,wind_speed_10m"
     if elev is not None:
         params["elevation"] = elev
     data = http_json("https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params))
-    if not isinstance(data, dict) or data.get("error") or not isinstance(data.get("daily"), dict) or (hourly and not isinstance(data.get("hourly"), dict)):
+    if not isinstance(data, dict) or data.get("error") or not isinstance(data.get("daily"), dict) or (hourly and require_hourly and not isinstance(data.get("hourly"), dict)):
         raise ToolError("UPSTREAM_RESPONSE", "天气接口未返回有效预报，请稍后重试")
     return data
 
@@ -164,12 +166,14 @@ def present(command, data, args):
 
 def cmd_weather(args):
     name, lng, lat, elevation = resolve(args.place, load_points())
-    forecast = om_forecast(lat, lng, elevation, days=args.days)
+    image_path = getattr(args, "image", None)
+    detail = bool(image_path or getattr(args, "details", False))
+    forecast = om_forecast(lat, lng, elevation, days=max(2, args.days), hourly=True, current=True, require_hourly=False) if detail else om_forecast(lat, lng, elevation, days=args.days)
     daily = forecast["daily"]
     if not isinstance(daily.get("time"), list) or not daily["time"]:
         raise ToolError("UPSTREAM_RESPONSE", "天气接口未返回有效的每日预报")
     days = []
-    for index, day in enumerate(daily["time"]):
+    for index, day in enumerate(daily["time"][:args.days]):
         code = value_at(daily, "weather_code", index)
         low, high = value_at(daily, "temperature_2m_min", index), value_at(daily, "temperature_2m_max", index)
         prob, snow = value_at(daily, "precipitation_probability_max", index), value_at(daily, "snowfall_sum", index)
@@ -177,7 +181,14 @@ def cmd_weather(args):
                      "temperature_min_c": low, "temperature_max_c": high, "precipitation_probability_pct": prob,
                      "precipitation_mm": value_at(daily, "precipitation_sum", index), "snowfall_cm": snow,
                      "lamp": risk_lamp(code, low, high, prob, snow)})
-    return present("weather", {"place": name, "elevation_m": forecast.get("elevation"), "days": days}, args)
+    data = {"place": name, "elevation_m": forecast.get("elevation"), "days": days}
+    if detail:
+        from weather_detail import add_details
+        add_details(data, forecast, datetime.now(CHINA_TZ), WMO)
+    if image_path:
+        from image_support import attach_image
+        attach_image(data, "weather", data, image_path)
+    return present("weather", data, args)
 
 
 def amap_route(o_lng, o_lat, d_lng, d_lat, waypoints=""):
@@ -326,6 +337,8 @@ def main():
     p = sub.add_parser("points", help="列出本地预设点位")
     p.add_argument("--sights", action="store_true", help="列出内置公共景点地址与来源")
     w = sub.add_parser("weather", help="单点每日天气")
+    w.add_argument("--image", metavar="FILE.png", help="生成天气图片；失败时保留文字/结构化天气")
+    w.add_argument("--details", action="store_true", help="同时查询当前预报和未来逐小时天气")
     w.add_argument("place")
     w.add_argument("--days", type=int, default=6)
     parsers = [p, w]

@@ -34,6 +34,9 @@ def render(command, data):
             print(f"  {point['name']}  {point['longitude']},{point['latitude']}  海拔 {number(point['elevation_m'])}m")
     elif command == "weather":
         print(f"📍 {data['place']}  海拔 {number(data['elevation_m'])}m")
+        if "current" in data:
+            now = data["current"]
+            print(f"当前预报（数据时间 {now.get('time') or '未知'}）：{now['weather']} {number(now['temperature_c'])}°C，体感 {number(now['apparent_temperature_c'])}°C")
         print("日期        天气    气温°C      降水%  降水mm  雪cm  提示")
         for day in data["days"]:
             print(f"{day['date']}  {day['weather']}  {number(day['temperature_min_c'])}~{number(day['temperature_max_c'])}  "
@@ -71,6 +74,10 @@ def render(command, data):
             print(f"- {change}")
     if command in ("weather", "route", "compare", "outing"):
         print("天气数据：Open-Meteo https://open-meteo.com/ · CC BY 4.0 https://creativecommons.org/licenses/by/4.0/；天气提示为本工具的估算。")
+    if "image" in data:
+        print("图片：" + data["image"]["path"])
+    if "image_error" in data:
+        print(data["image_error"]["message"])
 
 
 def render_route(data):
